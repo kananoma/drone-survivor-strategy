@@ -16,7 +16,7 @@ const defaultLanguage: Language = 'ja' // Default language
 
 async function loadTranslations(lang: Language): Promise<Translations> {
   try {
-    const response = await fetch(`/src/locales/${lang}.json`)
+    const response = await fetch(`/${lang}.json`)
     if (!response.ok) {
       console.error(`[LanguageContext] Failed to load ${lang}.json: ${response.status} ${response.statusText}`)
       throw new Error(`Failed to load ${lang}.json: ${response.statusText}`)
@@ -28,14 +28,14 @@ async function loadTranslations(lang: Language): Promise<Translations> {
     if (lang !== defaultLanguage) {
       console.warn(`[LanguageContext] Falling back to ${defaultLanguage} translations.`)
       try {
-        const fallbackResponse = await fetch(`/src/locales/${defaultLanguage}.json`)
+        const fallbackResponse = await fetch(`/${defaultLanguage}.json`)
         if (!fallbackResponse.ok) {
           console.error(
             `[LanguageContext] Fallback to ${defaultLanguage}.json also failed: ${fallbackResponse.statusText}`
           )
           if (defaultLanguage !== 'en') {
             console.warn(`[LanguageContext] Trying English as last resort.`)
-            const enResponse = await fetch(`/src/locales/en.json`)
+            const enResponse = await fetch(`/en.json`)
             if (enResponse.ok) return await enResponse.json()
             console.error(`[LanguageContext] English fallback also failed.`)
           }
@@ -49,7 +49,7 @@ async function loadTranslations(lang: Language): Promise<Translations> {
     } else if (lang !== 'en') {
       console.warn(`[LanguageContext] Default language ${lang} failed, falling back to English.`)
       try {
-        const enResponse = await fetch(`/src/locales/en.json`)
+        const enResponse = await fetch(`/en.json`)
         if (enResponse.ok) return await enResponse.json()
         console.error(`[LanguageContext] English fallback failed.`)
       } catch (enError) {
