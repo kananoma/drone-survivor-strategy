@@ -1,0 +1,697 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background-color: #1a202c;
+  color: #e2e8f0;
+}
+#root {
+  width: 100vw;
+  height: 100vh;
+} /* Rootはビューポート全体を占める */
+#root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+:root {
+  --animation-duration-sprite-move: 100ms;
+  --animation-duration-jammer-effect: 600ms;
+  --charge-field-placement-duration: 500ms; /* CHARGE_FIELD_PLACEMENT_EFFECT_DURATION_MS から */
+  --charge-field-recovery-duration: 100ms; /* CHARGE_FIELD_RECOVERY_EFFECT_DURATION_MS から */
+  --collector-drone-placement-duration: 500ms; /* COLLECTOR_DRONE_PLACEMENT_EFFECT_DURATION_MS から */
+  --crash-bomb-effect-duration: 1500ms; /* CRASH_BOMB_EFFECT_DURATION_MS から */
+}
+
+.hex {
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); /* フラットトップ */
+  position: relative;
+}
+
+.hex::before,
+.hex::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: inherit;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hex.hex-highlight-movable::before {
+  background-color: rgba(147, 197, 253, 0.25);
+  filter: drop-shadow(0 0 5px rgba(147, 197, 253, 0.85));
+  z-index: 10;
+}
+
+.hex.hex-highlight-sight::after {
+  background-color: rgba(239, 68, 68, 0.2);
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.75));
+}
+
+.hex.hex-highlight-collector-sight::before {
+  /* コレクタードローンの視界用の新しいクラス */
+  background-color: rgba(134, 239, 172, 0.25); /* 明るい緑のハイライト */
+  filter: drop-shadow(0 0 5px rgba(134, 239, 172, 0.85));
+  z-index: 10; /* 移動可能と同じz-indexにして、重なりの優先順位を許可するか、必要に応じて調整 */
+}
+
+.hex.hex-highlight-trap-placement::before {
+  background-color: rgba(253, 230, 153, 0.3);
+  filter: drop-shadow(0 0 7px rgba(253, 230, 153, 0.5));
+  animation: pulse-trap-highlight 1.5s infinite ease-in-out;
+  z-index: 12;
+}
+
+.hex.hex-highlight-barricade-placement::before {
+  background-color: rgba(160, 160, 160, 0.35);
+  filter: drop-shadow(0 0 7px rgba(160, 160, 160, 0.55));
+  animation: pulse-barricade-highlight 1.5s infinite ease-in-out;
+  z-index: 12;
+}
+
+.hex.hex-highlight-charge-field-placement::before {
+  background-color: rgba(74, 222, 128, 0.3);
+  filter: drop-shadow(0 0 7px rgba(74, 222, 128, 0.5));
+  animation: pulse-charge-field-placement-highlight 1.5s infinite ease-in-out;
+  z-index: 12;
+}
+
+.hex.hex-highlight-collector-drone-placement::before {
+  background-color: rgba(34, 197, 94, 0.3);
+  filter: drop-shadow(0 0 7px rgba(34, 197, 94, 0.5));
+  animation: pulse-collector-drone-placement-highlight 1.5s infinite ease-in-out;
+  z-index: 12;
+}
+
+.hex.hex-highlight-charge-field-active-zone::before {
+  background-color: rgba(52, 211, 153, 0.15);
+  box-shadow: inset 0 0 8px rgba(52, 211, 153, 0.4);
+  z-index: 9;
+}
+
+.hex.hex-highlight-spawn-warning::before {
+  background-color: rgba(255, 165, 0, 0.3);
+  filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.6));
+  animation: pulse-spawn-warning-highlight 1.2s infinite ease-in-out;
+  z-index: 11;
+}
+
+.hex.hex-highlight-portal::before {
+  background-color: rgba(0, 191, 255, 0.35);
+  filter: drop-shadow(0 0 10px rgba(0, 191, 255, 0.7));
+  animation: pulse-portal-highlight 2s infinite ease-in-out;
+  z-index: 13;
+}
+
+@keyframes pulse-trap-highlight {
+  0% {
+    background-color: rgba(253, 230, 153, 0.3);
+    filter: drop-shadow(0 0 7px rgba(253, 230, 153, 0.5));
+  }
+  50% {
+    background-color: rgba(254, 243, 199, 0.45);
+    filter: drop-shadow(0 0 10px rgba(254, 243, 199, 0.7));
+  }
+  100% {
+    background-color: rgba(253, 230, 153, 0.3);
+    filter: drop-shadow(0 0 7px rgba(253, 230, 153, 0.5));
+  }
+}
+
+@keyframes pulse-barricade-highlight {
+  0% {
+    background-color: rgba(160, 160, 160, 0.35);
+    filter: drop-shadow(0 0 7px rgba(160, 160, 160, 0.55));
+  }
+  50% {
+    background-color: rgba(190, 190, 190, 0.5);
+    filter: drop-shadow(0 0 10px rgba(190, 190, 190, 0.75));
+  }
+  100% {
+    background-color: rgba(160, 160, 160, 0.35);
+    filter: drop-shadow(0 0 7px rgba(160, 160, 160, 0.55));
+  }
+}
+
+@keyframes pulse-charge-field-placement-highlight {
+  0% {
+    background-color: rgba(74, 222, 128, 0.3);
+    filter: drop-shadow(0 0 7px rgba(74, 222, 128, 0.5));
+  }
+  50% {
+    background-color: rgba(110, 231, 183, 0.45);
+    filter: drop-shadow(0 0 10px rgba(110, 231, 183, 0.7));
+  }
+  100% {
+    background-color: rgba(74, 222, 128, 0.3);
+    filter: drop-shadow(0 0 7px rgba(74, 222, 128, 0.5));
+  }
+}
+
+@keyframes pulse-collector-drone-placement-highlight {
+  0% {
+    background-color: rgba(34, 197, 94, 0.3);
+    filter: drop-shadow(0 0 7px rgba(34, 197, 94, 0.5));
+  }
+  50% {
+    background-color: rgba(74, 222, 128, 0.45);
+    filter: drop-shadow(0 0 10px rgba(74, 222, 128, 0.7));
+  }
+  100% {
+    background-color: rgba(34, 197, 94, 0.3);
+    filter: drop-shadow(0 0 7px rgba(34, 197, 94, 0.5));
+  }
+}
+
+@keyframes pulse-spawn-warning-highlight {
+  0% {
+    background-color: rgba(255, 165, 0, 0.3);
+    filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.6));
+  }
+  50% {
+    background-color: rgba(255, 190, 50, 0.45);
+    filter: drop-shadow(0 0 12px rgba(255, 190, 50, 0.75));
+  }
+  100% {
+    background-color: rgba(255, 165, 0, 0.3);
+    filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.6));
+  }
+}
+
+@keyframes pulse-portal-highlight {
+  0% {
+    background-color: rgba(0, 191, 255, 0.35);
+    filter: drop-shadow(0 0 10px rgba(0, 191, 255, 0.7));
+  }
+  50% {
+    background-color: rgba(66, 211, 255, 0.5);
+    filter: drop-shadow(0 0 15px rgba(66, 211, 255, 0.85));
+  }
+  100% {
+    background-color: rgba(0, 191, 255, 0.35);
+    filter: drop-shadow(0 0 10px rgba(0, 191, 255, 0.7));
+  }
+}
+
+.debug-coords {
+  font-size: 0.6rem;
+  color: #4a5568;
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.sprite {
+  position: absolute;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: left var(--animation-duration-sprite-move) ease-in-out,
+    top var(--animation-duration-sprite-move) ease-in-out, opacity 0.3s ease-in-out;
+  pointer-events: none;
+}
+
+.player-sprite {
+  z-index: 30;
+}
+.enemy-sprite {
+  z-index: 20;
+}
+
+.enemy-sprite-jammed {
+  animation: pulseJamPurple 1.2s infinite ease-in-out;
+}
+@keyframes pulseJamPurple {
+  0%,
+  100% {
+    box-shadow: 0 0 3px 1px #a855f7, inset 0 0 2px 0px #c084fc;
+  }
+  50% {
+    box-shadow: 0 0 7px 3px #c084fc, inset 0 0 4px 1px #d8b4fe;
+  }
+}
+
+.enemy-sprite-level-reduced {
+  /* レベル低下の視覚効果用の新しいクラス */
+  /* 例：レベル低下を示すために、微妙な青い輝きや色合いを追加 */
+  box-shadow: 0 0 5px 2px rgba(59, 130, 246, 0.7), inset 0 0 3px 1px rgba(96, 165, 250, 0.5);
+  /* ボーダーなどの他のプロパティを調整したり、オーバーレイテキスト効果を追加することもできます */
+  /* 必要に応じてE{level}のテキストの色を変更することも検討してください */
+}
+
+.global-jammer-field-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(168, 85, 247, 0.05);
+  pointer-events: none;
+  z-index: 500;
+  animation: subtlePulseJammerField 2s infinite ease-in-out;
+}
+@keyframes subtlePulseJammerField {
+  0%,
+  100% {
+    background-color: rgba(168, 85, 247, 0.05);
+  }
+  50% {
+    background-color: rgba(168, 85, 247, 0.1);
+  }
+}
+
+.level-up-float-effect {
+  animation: floatUpAndFade 1.5s ease-out forwards;
+}
+@keyframes floatUpAndFade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -30%) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -70%) scale(0.9);
+  }
+}
+.text-shadow {
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5), 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.player-booster-wave-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: -1;
+}
+.player-booster-wave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(circle, rgba(147, 197, 253, 0.6) 0%, rgba(59, 130, 246, 0.1) 60%);
+  border: 2px solid rgba(191, 219, 254, 0.7);
+  box-shadow: 0 0 10px 2px rgba(96, 165, 250, 0.5);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  animation: boosterWaveAnimation 1.2s ease-out infinite;
+}
+@keyframes boosterWaveAnimation {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 1;
+    border-width: 3px;
+    box-shadow: 0 0 15px 4px rgba(96, 165, 250, 0.6);
+  }
+  80% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.8);
+    opacity: 0;
+    border-width: 1px;
+    box-shadow: 0 0 5px 1px rgba(96, 165, 250, 0.2);
+  }
+}
+
+.enemy-stealth-avoid-effect {
+  animation: stealthAvoidPop 1.5s ease-out forwards;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
+}
+@keyframes stealthAvoidPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -5px) scale(1.1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -10px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -15px) scale(0.8);
+  }
+}
+
+.player-shockwave-pulse-container {
+  position: absolute;
+  pointer-events: none;
+  z-index: 35;
+}
+.player-shockwave-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20%;
+  height: 20%;
+  background-color: rgba(236, 72, 153, 0.7);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  animation: shockwavePulseAnimation var(--animation-duration-sprite-move) ease-out forwards;
+}
+@keyframes shockwavePulseAnimation {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(6);
+    opacity: 0;
+  }
+}
+
+.player-jammer-pulse-container {
+  position: absolute;
+  pointer-events: none;
+  z-index: 35;
+}
+.player-jammer-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10%;
+  height: 10%;
+  background-color: rgba(168, 85, 247, 0.6);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  animation: jammerPulseAnimation var(--animation-duration-jammer-effect) ease-out forwards;
+}
+@keyframes jammerPulseAnimation {
+  0% {
+    transform: translate(-50%, -50%) scale(0.1);
+    opacity: 0.7;
+  }
+  70% {
+    transform: translate(-50%, -50%) scale(5);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(8);
+    opacity: 0;
+  }
+}
+
+/* チャージフィールドアイテムのスプライト */
+.charge-field-sprite-item {
+  background-color: rgba(74, 222, 128, 0.1);
+  border: 1px solid #22c55e;
+  animation: pulseChargeFieldItem 2.5s infinite ease-in-out;
+}
+@keyframes pulseChargeFieldItem {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 3px 1px rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 7px 3px rgba(74, 222, 128, 0.6);
+  }
+}
+
+/* チャージフィールド配置エフェクト */
+.charge-field-placement-effect-container {
+  position: absolute;
+  pointer-events: none;
+  z-index: 36;
+}
+.charge-field-placement-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10%;
+  height: 10%;
+  background-color: rgba(74, 222, 128, 0.7);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  animation: chargeFieldPlacementAnimation var(--charge-field-placement-duration) ease-out forwards;
+}
+@keyframes chargeFieldPlacementAnimation {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(4);
+    opacity: 0;
+  }
+}
+
+/* チャージフィールド回復エフェクト */
+.charge-field-recovery-effect-container {
+  position: absolute;
+  pointer-events: none;
+  z-index: 40;
+}
+.charge-field-recovery-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50%;
+  height: 50%;
+  background-color: rgba(74, 222, 128, 0.45);
+  border-radius: 50%;
+  border: 1px solid rgba(134, 239, 172, 0.6);
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 0;
+  animation: chargeFieldRecoveryPulseAnimation var(--charge-field-recovery-duration) ease-out forwards;
+}
+@keyframes chargeFieldRecoveryPulseAnimation {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* コレクタードローンアイテムのスプライト */
+.collector-drone-sprite-item {
+  background-color: rgba(22, 163, 74, 0.7);
+  border: 1px solid #15803d;
+  animation: pulseCollectorDroneItem 2s infinite ease-in-out;
+}
+@keyframes pulseCollectorDroneItem {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    box-shadow: 0 0 2px 1px rgba(22, 163, 74, 0.5);
+  }
+  50% {
+    transform: scale(1.03) rotate(5deg);
+    box-shadow: 0 0 5px 2px rgba(34, 197, 94, 0.7);
+  }
+}
+
+/* コレクタードローン配置エフェクト */
+.collector-drone-placement-effect-container {
+  position: absolute;
+  pointer-events: none;
+  z-index: 37;
+}
+.collector-drone-placement-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 15%;
+  height: 15%;
+  background-color: rgba(34, 197, 94, 0.8);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  animation: collectorDronePlacementAnimation var(--collector-drone-placement-duration) ease-out forwards;
+}
+@keyframes collectorDronePlacementAnimation {
+  0% {
+    transform: translate(-50%, -50%) scale(0.1) rotate(0deg);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(2.5) rotate(180deg);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(3.5) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* クラッシュボムエフェクト */
+.crash-bomb-effect-container {
+  position: absolute; /* 追加 */
+  /* 中央揃えのためにplayerPixelPosに基づいてJSで動的に幅/高さを設定 */
+  pointer-events: none;
+  z-index: 1000; /* 非常に高いz-index */
+  animation: crashBombFlash var(--crash-bomb-effect-duration) ease-out forwards;
+  /* overflow: visible; /* 必要に応じて、波紋がこの小さなコンテナを超えて広がるのを許可 */
+}
+
+.crash-bomb-ripple {
+  position: absolute;
+  top: 50%; /* 親の .crash-bomb-effect-container に相対 */
+  left: 50%; /* 親の .crash-bomb-effect-container に相対 */
+  width: 10px; /* 初期の小さいサイズ */
+  height: 10px; /* 初期の小さいサイズ */
+  background-color: transparent;
+  border: 3px solid rgba(255, 80, 80, 0.8);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0); /* 中央揃えと初期スケール */
+  opacity: 0;
+  animation: crashBombRippleExpand var(--crash-bomb-effect-duration) ease-out forwards;
+}
+
+.crash-bomb-glitch-overlay {
+  position: absolute; /* 親の .crash-bomb-effect-container に相対 */
+  top: 0;
+  left: 0;
+  width: 100%; /* .crash-bomb-effect-container を覆う */
+  height: 100%; /* .crash-bomb-effect-container を覆う */
+  /* グリッチオーバーレイは、必要に応じて画面を覆うために大きくしたり、配置したりする必要があるかもしれません。
+   プレイヤー中心の効果の場合、これはすぐ近くのエリアを覆います。
+   フルスクリーンのグリッチの場合、これは波紋コンテナの兄弟要素である必要があり、
+   それでも position:fixed などである必要があります。
+   今のところ、波紋の原点領域内に含まれていると仮定します。
+   より大きなグリッチ領域が必要な場合は、幅/高さと位置を調整してください。
+  */
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 0, 0, 0.15) 0px,
+    rgba(255, 0, 0, 0.15) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+  opacity: 0;
+  animation: crashBombGlitch var(--crash-bomb-effect-duration) steps(2, jump-none) forwards;
+  animation-delay: calc(var(--crash-bomb-effect-duration) * 0.2); /* グリッチを後で開始 */
+}
+
+@keyframes crashBombFlash {
+  /* 必要であれば、一般的な画面フラッシュとして残すことができます */
+  0% {
+    background-color: rgba(255, 255, 255, 0.9);
+    opacity: 1;
+  }
+  10% {
+    background-color: rgba(255, 100, 100, 0.7);
+    opacity: 0.9;
+  }
+  50% {
+    background-color: rgba(100, 0, 0, 0.3);
+    opacity: 0.7;
+  }
+  100% {
+    background-color: transparent;
+    opacity: 0;
+  }
+}
+
+@keyframes crashBombRippleExpand {
+  0% {
+    transform: translate(-50%, -50%) scale(0.1);
+    opacity: 1;
+    border-width: 8px;
+    border-color: rgba(255, 150, 150, 0.9);
+  }
+  50% {
+    opacity: 0.5;
+    border-width: 4px;
+    border-color: rgba(255, 50, 50, 0.5);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(200);
+    opacity: 0;
+    border-width: 1px;
+    border-color: rgba(200, 0, 0, 0);
+  }
+}
+
+@keyframes crashBombGlitch {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  5%,
+  15%,
+  25%,
+  35%,
+  45%,
+  55%,
+  65%,
+  75%,
+  85%,
+  95% {
+    opacity: 0.3;
+    transform: translateX(calc(5px - 10px * var(--random-glitch-x, 0.5)))
+      translateY(calc(5px - 10px * var(--random-glitch-y, 0.5)));
+  }
+  10%,
+  20%,
+  30%,
+  40%,
+  50%,
+  60%,
+  70%,
+  80%,
+  90% {
+    opacity: 0.1;
+    transform: translateX(calc(-3px + 6px * var(--random-glitch-x, 0.5)))
+      translateY(calc(-3px + 6px * var(--random-glitch-y, 0.5)));
+  }
+}
+
+.armament-progress-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: conic-gradient(
+    rgba(59, 130, 246, 0.35) 0%,
+    rgba(59, 130, 246, 0.35) var(--energy-progress, 0%),
+    transparent var(--energy-progress, 0%),
+    transparent 100%
+  );
+  pointer-events: none;
+}
